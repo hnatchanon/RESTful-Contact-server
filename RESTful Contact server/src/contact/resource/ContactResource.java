@@ -1,7 +1,4 @@
 package contact.resource;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.Reader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -49,7 +46,6 @@ public class ContactResource {
 	@Produces( MediaType.APPLICATION_XML )
 	public Response getContacts( @QueryParam("q") String query ) {
 		if(query==null) return getContacts();
-		StringBuilder sb = new StringBuilder();
 		
 		List<Contact> cts = new ArrayList<Contact>();
 		Iterator<Contact> itr = dao.findAll().iterator();
@@ -82,7 +78,9 @@ public class ContactResource {
 	public Response getContact( @PathParam("id") long id ) 
 	{
 		Contact contact = dao.find(id);
-		return Response.ok(contact).build();
+		if(contact != null)
+			return Response.ok(contact).build();
+		return Response.status(Response.Status.NOT_FOUND).build();
 	}
 	
 	/**
@@ -95,9 +93,16 @@ public class ContactResource {
 	@POST
 	@Consumes( { MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON } )
 	public Response postContact( JAXBElement<Contact> element, @Context UriInfo uriInfo ) throws URISyntaxException {
+		
 		Contact contact = element.getValue();
-		dao.save( contact );
-		return Response.created(new URI("localhost:8080/contacts/"+contact.getId())).build();
+		if(dao.find(contact.getId()) == null) {
+			if(dao.save( contact )) {
+				URI uri = uriInfo.getAbsolutePathBuilder().path(""+contact.getId() ).build();
+				return Response.created(uri).build();
+			}
+			return Response.status(Response.Status.BAD_REQUEST).build();
+		}
+		return Response.status(Response.Status.CONFLICT).build();
 	}
 
 	/**
@@ -112,8 +117,11 @@ public class ContactResource {
 	public Response updateContact( JAXBElement<Contact> element, @PathParam("id") String id) throws URISyntaxException {
 		Contact contact = element.getValue();
 		contact.setId(Long.parseLong(id));
-		dao.update(contact);
-		return Response.created(new URI("localhost:8080/contacts/"+id)).build();
+		if(dao.update(contact)) {
+			URI uri = uriInfo.getAbsolutePathBuilder().path(""+contact.getId() ).build();
+			return Response.created(uri).build();
+		}
+		return Response.status(Response.Status.NOT_FOUND).build();
 	}
 	
 	/**
@@ -122,7 +130,10 @@ public class ContactResource {
 	 */
 	@DELETE
 	@Path("{id}")@Produces( MediaType.APPLICATION_XML )
-	public void deleteContact( @PathParam("id") String id) {
-		dao.delete(Long.parseLong(id));
+	public Response deleteContact( @PathParam("id") String id) {
+		if(dao.delete(Long.parseLong(id))) {
+			return Response.status(Response.Status.ACCEPTED).build();
+		}
+		return Response.status(Response.Status.NOT_FOUND).build();
 	}
 }
