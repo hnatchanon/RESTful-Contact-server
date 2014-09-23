@@ -1,6 +1,11 @@
 package contact.entity;
 import java.io.Serializable;
 
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Table;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
@@ -11,11 +16,15 @@ import javax.xml.bind.annotation.XmlRootElement;
  * title is text to display for this contact in a list of contacts,
  * such as a nickname or company name.
  */
+@Entity 
+@Table(name="contacts")
 @XmlRootElement(name="contact")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class Contact implements Serializable {
 	private static final long serialVersionUID = 1L;
 
+	@Id 
+	@GeneratedValue(strategy = GenerationType.AUTO)
 	@XmlAttribute
 	private long id;
 	private String title;

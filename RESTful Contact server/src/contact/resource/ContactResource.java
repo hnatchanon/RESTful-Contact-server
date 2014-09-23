@@ -1,11 +1,17 @@
 package contact.resource;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
-import javax.ws.rs.*;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
@@ -15,7 +21,8 @@ import javax.xml.bind.JAXBElement;
 
 import contact.entity.Contact;
 import contact.service.ContactDao;
-import contact.service.DaoFactory;
+import contact.service.jpa.JpaDaoFactory;
+import contact.service.mem.MemDaoFactory;
 
 /**
  * ContactResource provides RESTful web resources using JAX-RS
@@ -34,7 +41,7 @@ public class ContactResource {
 	UriInfo uriInfo;
 	
 	public ContactResource() {
-		dao = DaoFactory.getInstance().getContactDao();
+		dao = MemDaoFactory.getInstance().getContactDao();
 	}
 
 	/**
@@ -47,13 +54,7 @@ public class ContactResource {
 	public Response getContacts( @QueryParam("q") String query ) {
 		if(query==null) return getContacts();
 		
-		List<Contact> cts = new ArrayList<Contact>();
-		Iterator<Contact> itr = dao.findAll().iterator();
-		while(itr.hasNext()) {
-			Contact c = itr.next();
-			if(c.getTitle().contains(query))
-				cts.add(c);
-		}
+		List<Contact> cts = dao.findByTitle(query);
 		
 		GenericEntity<List<Contact>> entitiies = new GenericEntity<List<Contact>>(cts){};
 		return Response.ok(entitiies).build();
@@ -114,14 +115,25 @@ public class ContactResource {
 	 */
 	@PUT
 	@Path("{id}")@Produces( MediaType.APPLICATION_XML )
-	public Response updateContact( JAXBElement<Contact> element, @PathParam("id") String id) throws URISyntaxException {
+	public Response updateContact( JAXBElement<Contact> element, @PathParam("id") long id) throws URISyntaxException {
 		Contact contact = element.getValue();
-		contact.setId(Long.parseLong(id));
+		if(dao.find(id) == null) return Response.status(Response.Status.NOT_FOUND).build();
+		contact.setId(id);
+		
+		if(contact.getEmail() == null)
+			contact.setEmail("");
+		if(contact.getName() == null)
+			contact.setName("");
+		if(contact.getPhoneNumber() == null)
+			contact.setPhoneNumber("");
+		if(contact.getTitle() == null)
+			contact.setTitle("");
+		
 		if(dao.update(contact)) {
 			URI uri = uriInfo.getAbsolutePathBuilder().path(""+contact.getId() ).build();
 			return Response.created(uri).build();
 		}
-		return Response.status(Response.Status.NOT_FOUND).build();
+		return Response.status(Response.Status.BAD_REQUEST).build();
 	}
 	
 	/**
@@ -132,7 +144,7 @@ public class ContactResource {
 	@Path("{id}")@Produces( MediaType.APPLICATION_XML )
 	public Response deleteContact( @PathParam("id") String id) {
 		if(dao.delete(Long.parseLong(id))) {
-			return Response.status(Response.Status.ACCEPTED).build();
+			return Response.ok().build();
 		}
 		return Response.status(Response.Status.NOT_FOUND).build();
 	}
