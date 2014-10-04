@@ -75,9 +75,13 @@ public class EtagTest {
 			e.printStackTrace();
 		}
 
-		Contact contact = new Contact("contact1", "Joe Contact", "joe@microsoft.com", "088888888");
-		contact.setId(1000001);
-		MemDaoFactory.getInstance().getContactDao().save(contact);
+		Contact contact1 = new Contact("contact1", "Joe Contact", "joe@microsoft.com", "088888888");
+		contact1.setId(1000001);
+		MemDaoFactory.getInstance().getContactDao().save(contact1);
+		
+		Contact contact2 = new Contact("contact1", "Joe Contact", "joe@microsoft.com", "088888888");
+		contact2.setId(1000002);
+		MemDaoFactory.getInstance().getContactDao().save(contact2);
 	}
 	
 	/**
@@ -145,11 +149,9 @@ public class EtagTest {
 	@Test
 	public void testGetNoneMatchSuccess() {
 		long id = 1000001;
-		Contact c = MemDaoFactory.getInstance().getContactDao().find(id);
 		Request request = client.newRequest(serviceUrl + "contacts/" + id);
-		request.header("If-None-Match", "\""+c.hashCode()+"\"");
+		request.header("If-None-Match", "fafafa");
 		request.method(HttpMethod.GET);
-		System.out.println(request.getHeaders());
 
 		ContentResponse response;
 		try {
@@ -166,15 +168,45 @@ public class EtagTest {
 	@Test
 	public void testGetNoneMatchFail() {
 		long id = 1000001;
+		Contact c = MemDaoFactory.getInstance().getContactDao().find(id);
 		Request request = client.newRequest(serviceUrl + "contacts/" + id);
-		request.header("If-None-Match", "\"123456789\"");
+		request.header("If-None-Match", c.hashCode() + "");
 		request.method(HttpMethod.GET);
-		System.out.println(request.getHeaders());
 
 		ContentResponse response;
 		try {
 			response = request.send();
 			assertEquals(Response.Status.NOT_MODIFIED.getStatusCode(), response.getStatus());
+		} catch (InterruptedException | TimeoutException | ExecutionException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	/**
+	 * Test PUT with header "If-Match" that match.
+	 */
+	@Test
+	public void testPutMatchSuccess() {
+		long id = 1000001;
+		String contentStr = "<contact>"
+				+ "<title>Test</title>"
+				+ "<name>Name Tester</name>"
+				+ "<email>tt@test.t</email>"
+				+ "<phoneNumber>123456789</phoneNumber>"
+				+ "</contact>";
+		StringContentProvider content = new StringContentProvider(contentStr);
+
+		Contact c = MemDaoFactory.getInstance().getContactDao().find(id);
+		
+		Request request = client.newRequest(serviceUrl + "contacts/" + id);
+		request.content(content, "application/xml");
+		request.header("If-Match", c.hashCode() + "");
+		request.method(HttpMethod.PUT);
+
+		ContentResponse response;
+		try {
+			response = request.send();
+			assertEquals(Response.Status.CREATED.getStatusCode(), response.getStatus());
 		} catch (InterruptedException | TimeoutException | ExecutionException e) {
 			e.printStackTrace();
 		}
@@ -196,10 +228,53 @@ public class EtagTest {
 
 		Request request = client.newRequest(serviceUrl + "contacts/" + id);
 		request.content(content, "application/xml");
-		request.header("If-Match", "\"lll\"");
+		request.header("If-Match", "lll");
 		request.method(HttpMethod.PUT);
 
 		ContentResponse response;
+		try {
+			response = request.send();
+			assertEquals(Response.Status.PRECONDITION_FAILED.getStatusCode(), response.getStatus());
+		} catch (InterruptedException | TimeoutException | ExecutionException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	/**
+	 * Test DELETE with header "If-Match" that match.
+	 */
+	@Test
+	public void testDeleteSuccess() {
+		long id = 1000001;
+		Request request = client.newRequest(serviceUrl + "contacts/" + id);
+		request.method(HttpMethod.DELETE);
+		ContentResponse response;
+		
+		Contact c = MemDaoFactory.getInstance().getContactDao().find(id);
+		request.header("If-Match", c.hashCode() + "");
+		
+		try {
+			response = request.send();
+			assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+		} catch (InterruptedException | TimeoutException | ExecutionException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	/**
+	 * Test DELETE with header "If-Match" that not match.
+	 */
+	@Test
+	public void testDeleteFail() {
+		long id = 1000002;
+
+		Contact c = MemDaoFactory.getInstance().getContactDao().find(id);
+		Request request = client.newRequest(serviceUrl + "contacts/" + id);
+		request.method(HttpMethod.DELETE);
+		ContentResponse response;
+		
+		request.header("If-Match", "ssss");
+		
 		try {
 			response = request.send();
 			assertEquals(Response.Status.PRECONDITION_FAILED.getStatusCode(), response.getStatus());

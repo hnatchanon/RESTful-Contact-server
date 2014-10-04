@@ -87,7 +87,7 @@ public class ContactResource {
 		
 		Contact contact = dao.find(id);
 		if(contact != null) {
-			if(eTagNM == null || eTagNM.equals(contact.hashCode()+""))
+			if(eTagNM == null || !eTagNM.equals(contact.hashCode()+""))
 				return Response.ok(contact).tag(new EntityTag(contact.hashCode() + "")).build();
 			else
 				return Response.notModified().build();
@@ -170,7 +170,7 @@ public class ContactResource {
 		if(dao.delete(id) && (eTagM == null || eTagM.equals(contact.hashCode()+""))) {
 			return Response.ok().build();
 		}
-		if(eTagM != null && Integer.parseInt(eTagM) != contact.hashCode())
+		if(eTagM != null && !eTagM.equals(contact.hashCode()+""))
 			return Response.status(Status.PRECONDITION_FAILED).build();
 		return Response.status(Response.Status.NOT_FOUND).build();
 	}
