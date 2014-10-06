@@ -34,7 +34,7 @@ public class JpaContactDao implements ContactDao {
 	 */
 	public JpaContactDao(EntityManager em) {
 		this.em = em;
-		createTestContact( );
+//		createTestContact( );
 	}
 	
 	/** add contacts for testing. */
@@ -91,6 +91,7 @@ public class JpaContactDao implements ContactDao {
 	 */
 	@Override
 	public boolean delete(long id) {
+// You must use try - catch and rollback
 		em.getTransaction().begin();
 		Contact contact = em.find(Contact.class,id);
 		if(contact == null)
@@ -125,6 +126,7 @@ public class JpaContactDao implements ContactDao {
 	 */
 	@Override
 	public boolean update(Contact update) {
+// Same problem as delete.
 		em.getTransaction().begin();
 		long id = update.getId();
 		Contact contact = em.find(Contact.class,id);

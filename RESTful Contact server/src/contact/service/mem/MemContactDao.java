@@ -22,7 +22,7 @@ public class MemContactDao implements ContactDao {
 	
 	public MemContactDao() {
 		contacts = new ArrayList<Contact>();
-		nextId = new AtomicLong(1000L);
+		nextId = new AtomicLong(100L);
 		//createTestContact(1);
 		//createTestContact(2);
 		//createTestContact(3);

@@ -22,6 +22,7 @@ import contact.entity.Contact;
 import contact.service.ContactDao;
 import contact.service.mem.MemContactDao;
 import contact.service.mem.MemDaoFactory;
+// -1 No Javadoc
 
 public class WebServiceTest {
 
@@ -29,6 +30,8 @@ public class WebServiceTest {
 	
 	private static String serviceUrl;
 	private HttpClient client;
+// This is a test of web service interface.
+// Don't try to access the DAO directly.
 	private ContactDao dao;
 	private Contact contact1;
 	private Contact contact2;
@@ -62,6 +65,7 @@ public class WebServiceTest {
 	
 	@Test
 	public void testGetContactSuccess() throws InterruptedException, ExecutionException, TimeoutException {
+// BAD TEST. You are *assuming* there is a contact with id 1001.  The service could assign it any id it wants!
 		ContentResponse response = client.GET(serviceUrl + "contacts/1001");
 		assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
 		response = client.GET(serviceUrl + "contacts/1002");
@@ -91,7 +95,9 @@ public class WebServiceTest {
 		
 		ContentResponse response = request.send();
 		assertEquals(Response.Status.CREATED.getStatusCode(), response.getStatus());
-	};
+// Incomplete: didn't test Location header, didn't test if updates correctly applied
+		
+	}; // unnecessary semi-colon
 	
 	@Test
 	public void testPostContactFail() throws InterruptedException, ExecutionException, TimeoutException {
@@ -107,10 +113,11 @@ public class WebServiceTest {
 		Request request = client.newRequest(serviceUrl + "contacts/");
 		request.content(content, "application/xml");
 		request.method(HttpMethod.POST);
-		
+//BAD TEST: You should not assume that id 1001 is already in use.	
+// You can't know what id's the service is using unless you query one first.
 		ContentResponse response = request.send();
 		assertEquals(Response.Status.CONFLICT.getStatusCode(), response.getStatus());
-	};
+	}; // why are you putting semi-colon after methods?
 	
 	@Test
 	public void testPutContactSuccess() throws InterruptedException, ExecutionException, TimeoutException {
@@ -126,10 +133,10 @@ public class WebServiceTest {
 		Request request = client.newRequest(serviceUrl + "contacts/" + id);
 		request.content(content, "application/xml");
 		request.method(HttpMethod.PUT);
-		
+//BAD TEST for same reason as given above.		
 		ContentResponse response = request.send();
 		assertEquals(Response.Status.CREATED.getStatusCode(), response.getStatus());
-	};
+	}; // semi-colon again
 	
 	@Test
 	public void testPutContactFail() throws InterruptedException, ExecutionException, TimeoutException {
@@ -149,6 +156,7 @@ public class WebServiceTest {
 	
 	@Test
 	public void testDeleteSuccess() throws InterruptedException, TimeoutException, ExecutionException {
+//BAD TEST You can't assume this id already exists in persistence.
 		long id = 1002;
 		Request request = client.newRequest(serviceUrl + "contacts/" + id);
 		request.method(HttpMethod.DELETE);
@@ -158,6 +166,7 @@ public class WebServiceTest {
 	
 	@Test
 	public void testDeleteFail() throws InterruptedException, TimeoutException, ExecutionException {
+//BAD TEST Unlikely to exist, but it could.
 		long id = 12424;
 		Request request = client.newRequest(serviceUrl + "contacts/" + id);
 		request.method(HttpMethod.DELETE);

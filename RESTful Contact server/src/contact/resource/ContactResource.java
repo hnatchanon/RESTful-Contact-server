@@ -24,6 +24,7 @@ import contact.service.ContactDao;
 import contact.service.jpa.JpaDaoFactory;
 import contact.service.mem.MemDaoFactory;
 
+//JIM: This comment doesn't describe what the class actually does.
 /**
  * ContactResource provides RESTful web resources using JAX-RS
  * annotations to map requests to request handling code,
@@ -41,6 +42,7 @@ public class ContactResource {
 	UriInfo uriInfo;
 	
 	public ContactResource() {
+//BAD CODE: Use DaoFactory not MemDaoFactory
 		dao = MemDaoFactory.getInstance().getContactDao();
 	}
 
@@ -51,12 +53,14 @@ public class ContactResource {
 	 */
 	@GET
 	@Produces( MediaType.APPLICATION_XML )
+//In homework I wrote to change the query param to "title"
 	public Response getContacts( @QueryParam("q") String query ) {
 		if(query==null) return getContacts();
 		
 		List<Contact> cts = dao.findByTitle(query);
 		
 		GenericEntity<List<Contact>> entitiies = new GenericEntity<List<Contact>>(cts){};
+//ERROR: doesn't check if query was actually matched. If no match return NOT FOUND
 		return Response.ok(entitiies).build();
 	}
 	
@@ -119,7 +123,7 @@ public class ContactResource {
 		Contact contact = element.getValue();
 		if(dao.find(id) == null) return Response.status(Response.Status.NOT_FOUND).build();
 		contact.setId(id);
-		
+// Don't manipulate Contact objects here. High Coupling.		
 		if(contact.getEmail() == null)
 			contact.setEmail("");
 		if(contact.getName() == null)
@@ -142,7 +146,9 @@ public class ContactResource {
 	 */
 	@DELETE
 	@Path("{id}")@Produces( MediaType.APPLICATION_XML )
+// should be long not string
 	public Response deleteContact( @PathParam("id") String id) {
+// may throw NumberFormatException!
 		if(dao.delete(Long.parseLong(id))) {
 			return Response.ok().build();
 		}
